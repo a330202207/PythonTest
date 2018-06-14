@@ -1,6 +1,8 @@
 import requests
 import json
 import re
+import pandas
+import sqlite3
 from bs4 import BeautifulSoup
 from datetime import datetime
 
@@ -46,15 +48,40 @@ def getNewsDetail(newsUrl):
     result['editor'] = soup.select('.show_author')[0].text.lstrip('责任编辑：')
 
     # 评论
-    # result['comments'] = getCommentCounts(newsUrl)
+    result['comments'] = getCommentCounts(newsUrl)
     return result
 
-res = getNewsDetail('http://news.sina.com.cn/c/2018-06-12/doc-ihcwpcmp6666006.shtml')
-print(res)
-# def getCommentCounts(newsurl):
-#     m = re.search('doc-i(.+).shtml', newsurl)
-#     newsid = m.group(1)
-#     coumments = requests.get(commentUrl.format(newsid))
-#
-#     jd = json.loads(coumments.text)
-#     return jd['result']['count']['total']
+def getCommentCounts(newsurl):
+    m = re.search('doc-i(.+).shtml', newsurl)
+    newsid = m.group(1)
+    coumments = requests.get(commentUrl.format(newsid))
+
+    jd = json.loads(coumments.text)
+    return jd['result']['count']['total']
+
+def parseListLinks(url):
+    newsdetails = []
+    res = requests.get(url)
+    jd = json.loads(res.text.lstrip(' newsloadercallback(').rstrip(');'))
+    for ent in jd['result']['data']:
+        newsdetails.append(getNewsDetail(ent['url']))
+    return newsdetails
+
+# res = getNewsDetail('http://news.sina.com.cn/c/2018-06-12/doc-ihcwpcmp6666006.shtml')
+# print(res)
+url = 'http://api.roll.news.sina.com.cn/zt_list?channel=news&cat_1=gnxw&cat_2==gdxw1||=gatxw||=zs-pl||=mtjj&level==1||=2&show_ext=1&show_all=1&show_num=22&tag=1&format=json&page={}'
+news_toal = []
+for i in range(1, 3):
+    newsurl = url.format(i)
+    newsary = parseListLinks(newsurl)
+    news_toal.extend(newsary)
+# res = parseListLinks(url)
+
+df = pandas.DataFrame(news_toal)
+with sqlite3.connect('news.sqlite') as db:
+    df.to_sql('news', con = db)
+
+# with sqlite3.connect('news.sqlite') as db:
+#     df2 = pandas.read_sql_query('SELECT * FROM news', con = db)
+# df.to_excel('news.xlsx')
+# print(news_toal)
