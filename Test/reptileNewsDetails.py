@@ -28,6 +28,10 @@ from datetime import datetime
 # num = soup.select('.tool-cmt .num')
 # print(editor,num)
 
+commentUrl = 'http://comment5.news.sina.com.cn/page/info?version=1&format=json&channel=gn&newsid=comos-{}&\
+                   group=undefined&compress=0&ie=utf-8&oe=utf-8&page=1&page_size=3&t_size=3&h_size=3&\
+                   thread=1'
+
 def getNewsDetail(newsUrl):
     result = {}
     res = requests.get(newsUrl)
@@ -75,13 +79,13 @@ for i in range(1, 3):
     newsurl = url.format(i)
     newsary = parseListLinks(newsurl)
     news_toal.extend(newsary)
-# res = parseListLinks(url)
+res = parseListLinks(url)
 
 df = pandas.DataFrame(news_toal)
-with sqlite3.connect('news.sqlite') as db:
-    df.to_sql('news', con = db)
+# with sqlite3.connect('news.sqlite') as db:
+#     df.to_sql('news', con = db)
 
 # with sqlite3.connect('news.sqlite') as db:
 #     df2 = pandas.read_sql_query('SELECT * FROM news', con = db)
-# df.to_excel('news.xlsx')
+df.to_excel('news.xlsx')
 # print(news_toal)
